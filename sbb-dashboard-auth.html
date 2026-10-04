@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="yBSQCrIOocl3cUKdgi6hKwiSo7AOtPmu9RxzrMuo">
+    <title>Dashboard | SBB Tambak</title>
+<script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#0A66C2', 50: '#EFF6FF', 100: '#DBEAFE', 200: '#BFDBFE', 300: '#93C5FD',
+                400: '#60A5FA', 500: '#3B82F6', 600: '#2563EB', 700: '#1D4ED8', 800: '#1E40AF', 900: '#1E3A8A',
+              },
+              accent: {
+                DEFAULT: '#10B981', 50: '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+                400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857', 800: '#065F46', 900: '#064E3B',
+              }
+            },
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+        .sidebar {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 40;
+            contain: layout paint;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+        .sidebar-header {
+            background: linear-gradient(135deg, rgba(10, 102, 194, 0.2), rgba(16, 185, 129, 0.2));
+            backdrop-filter: blur(10px);
+        }
+        .topbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            z-index: 30;
+        }
+        .bottom-status {
+            background: rgba(255, 255, 255, 0.96);
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+            color: #64748b;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #0A66C2 0%, #10B981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            background: linear-gradient(to right, rgba(10, 102, 194, 0.1), rgba(16, 185, 129, 0.1));
+        }
+        .sidebar {
+            min-height: 0;
+        }
+        .sidebar-nav {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-gutter: stable;
+            overscroll-behavior: contain;
+        }
+        .sidebar-footer {
+            flex: 0 0 132px;
+            min-height: 132px;
+            background: rgba(30, 41, 59, 0.96);
+            contain: layout paint;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            transition: none !important;
+            z-index: 2;
+        }
+        .sidebar-footer * {
+            transition: none !important;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(to right, rgba(10, 102, 194, 0.2), rgba(16, 185, 129, 0.2));
+            border-left: 3px solid;
+            border-image: linear-gradient(to bottom, #0A66C2, #10B981) 1;
+        }
+        .logo-container {
+            background: linear-gradient(135deg, rgba(10, 102, 194, 0.1), rgba(16, 185, 129, 0.1));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(10, 102, 194, 0.2);
+        }
+        .user-avatar {
+            background: linear-gradient(135deg, rgba(10, 102, 194, 0.2), rgba(16, 185, 129, 0.2));
+            backdrop-filter: blur(10px);
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        .panel {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+        }
+        .field {
+            width: 100%;
+            min-height: 2.5rem;
+            border-radius: .5rem;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            padding: .55rem .75rem;
+            font-size: .875rem;
+            transition: all .2s ease;
+        }
+        .field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+        .label {
+            display: block;
+            margin-bottom: .35rem;
+            font-size: .75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .025em;
+        }
+        .page-transition {
+            animation: none;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, #0A66C2, #10B981); border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden transition-colors duration-300">
+    <aside class="sidebar w-64 text-white flex flex-col flex-shrink-0">
+        <div class="sidebar-header h-20 flex items-center px-6 border-b border-gray-800">
+            <div class="flex items-center space-x-3">
+                <div class="logo-container w-12 h-12 rounded-xl flex items-center justify-center">
+                    <div class="text-lg font-bold gradient-text">SB</div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight sidebar-text">SBB Tambak</h1>
+                    <p class="text-xs text-gray-400 mt-1 sidebar-text">Administration Panel</p>
+                </div>
+            </div>
+        </div>
+
+                <nav id="sidebarNav" class="sidebar-nav flex-1 px-4 py-6 space-y-1">
+            <div class="px-4 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Dashboard</div>
+            </div>
+            <a href="http://10.10.31.40:8282/dashboard"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg active">
+                <i class="fas fa-home w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Dashboard Tambak</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Setup</div>
+            </div>
+            <a href="http://10.10.31.40:8282/master-data"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-clipboard-list w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Data Master</span>
+            </a>
+            <a href="http://10.10.31.40:8282/users"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-users w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">User & Role</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Operasional</div>
+            </div>
+            <a href="http://10.10.31.40:8282/stocking"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-water w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Siklus & Tebar</span>
+            </a>
+            <a href="http://10.10.31.40:8282/feeding"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-wheat-awn w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Pakan Harian</span>
+            </a>
+            <a href="http://10.10.31.40:8282/sampling"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-chart-line w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Sampling</span>
+            </a>
+            <a href="http://10.10.31.40:8282/treatments"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-flask-vial w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Saprotam & Treatment</span>
+            </a>
+            <a href="http://10.10.31.40:8282/probiotics"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-vial w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Probiotik</span>
+            </a>
+            <a href="http://10.10.31.40:8282/harvests"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-basket-shopping w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Input Panen</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Keuangan</div>
+            </div>
+            <a href="http://10.10.31.40:8282/hpp"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-calculator w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">HPP Siklus</span>
+            </a>
+            <a href="http://10.10.31.40:8282/sales-invoices"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-file-invoice-dollar w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Penjualan Invoice</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Monitoring & Report</div>
+            </div>
+            <a href="http://10.10.31.40:8282/pond-monitor"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-chart-bar w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Monitor Tambak</span>
+            </a>
+            <a href="http://10.10.31.40:8282/exports"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-file-export w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Export & Backup</span>
+            </a>
+            <a href="http://10.10.31.40:8282/audit-logs"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-history w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Audit Logs</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Dokumentasi</div>
+            </div>
+            <a href="http://10.10.31.40:8282/documentation/flow-chart"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-book-open w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Panduan Aplikasi</span>
+            </a>
+
+            <div class="px-4 pt-6 pb-2">
+                <div class="text-xs font-medium text-gray-400 uppercase tracking-wider sidebar-text">Administrasi Data</div>
+            </div>
+            <a href="http://10.10.31.40:8282/imports"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-file-import w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Import Historis</span>
+            </a>
+            <a href="http://10.10.31.40:8282/closing-periods"
+               class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg ">
+                <i class="fas fa-lock w-5 text-center text-gray-300"></i>
+                <span class="sidebar-text">Closing Periode</span>
+            </a>
+        </nav>
+        <script>
+            (function () {
+                const nav = document.getElementById('sidebarNav');
+                if (!nav) return;
+
+                const key = 'sbb-sidebar-scroll-top';
+                let isNavigating = false;
+
+                const saved = sessionStorage.getItem(key);
+                if (saved !== null) {
+                    nav.scrollTop = Number(saved) || 0;
+                }
+
+                function saveScroll() {
+                    sessionStorage.setItem(key, String(nav.scrollTop));
+                }
+
+                nav.addEventListener('scroll', function () {
+                    if (!isNavigating) saveScroll();
+                }, { passive: true });
+
+                nav.querySelectorAll('a[href]').forEach(function (link) {
+                    ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (eventName) {
+                        link.addEventListener(eventName, function () {
+                            isNavigating = true;
+                            saveScroll();
+                        }, { passive: true });
+                    });
+                });
+            })();
+        </script>
+
+        <div class="sidebar-footer p-4 border-t border-gray-800">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="user-avatar w-8 h-8 rounded-full flex items-center justify-center">
+                    <span class="text-sm font-medium gradient-text">H</span>
+                </div>
+                <div class="sidebar-text">
+                    <div class="text-xs font-medium text-white">Hasan</div>
+                    <div class="text-[11px] uppercase text-gray-400">admin</div>
+                </div>
+            </div>
+            <div class="text-xs text-gray-400 mb-2 sidebar-text">
+                <i class="fas fa-shield-alt mr-1"></i> Session: YoYo50HK...
+            </div>
+            <div class="text-xs text-gray-400 sidebar-text">Copyright 2026 SBB Tambak</div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <header id="appTopbar" class="topbar h-16 px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-600">
+                    <a href="http://10.10.31.40:8282/dashboard" class="hover:text-primary-600 font-medium">Admin</a>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <button type="button" class="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors duration-200">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div class="flex items-center space-x-3 pl-3 border-l border-gray-200">
+                    <div class="text-right hidden md:block">
+                        <div class="text-sm font-medium text-gray-800">Hasan</div>
+                    </div>
+                    <div class="user-avatar w-10 h-10 rounded-full flex items-center justify-center">
+                        <span class="font-semibold gradient-text">H</span>
+                    </div>
+                    <form method="POST" action="http://10.10.31.40:8282/logout">
+                        <input type="hidden" name="_token" value="yBSQCrIOocl3cUKdgi6hKwiSo7AOtPmu9RxzrMuo" autocomplete="off">                        <button class="text-sm px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-600 transition">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Keluar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        <main id="appMain" class="flex-1 overflow-y-auto px-8 py-8 pb-16 page-transition">
+                        
+            <div class="space-y-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">Dashboard Manajemen</h1>
+                <p class="mt-1 text-sm text-gray-500">Ringkasan performa tambak dari siklus, pakan, sampling, treatment, probiotik, panen, HPP, dan invoice.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="http://10.10.31.40:8282/pond-monitor" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                    <i class="fa-solid fa-chart-simple text-gray-500"></i>
+                    <span>Monitor Kolam</span>
+                </a>
+                <a href="http://10.10.31.40:8282/hpp" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Review HPP</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <form method="GET" action="http://10.10.31.40:8282/dashboard" class="mb-5 flex flex-col gap-4 rounded-xl border border-blue-100 bg-blue-50/45 px-4 py-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <div class="text-sm font-semibold text-gray-900">Filter Periode Report</div>
+                    <div class="mt-1 text-xs text-gray-500">Tahun Berjalan: 2026-01-01 sampai 2026-07-10</div>
+                    <div class="mt-1 text-[11px] text-gray-400">Tanggal bisa diedit hanya saat preset Custom.</div>
+                </div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Preset Periode</label>
+                        <select id="dashboardPeriodMode" name="mode" class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="ytd" selected>Year to Date</option>
+                            <option value="month" >Bulan Ini</option>
+                            <option value="custom" >Custom</option>
+                            <option value="all" >Semua Data</option>
+                        </select>
+                    </div>
+                    <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Dari</label><input data-period-date name="date_from" value="2026-01-01" type="date" class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:bg-gray-100 disabled:text-gray-500"></div>
+                    <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Sampai</label><input data-period-date name="date_to" value="2026-07-10" type="date" class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:bg-gray-100 disabled:text-gray-500"></div>
+                    <button class="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700">Terapkan</button>
+                    <a href="http://10.10.31.40:8282/exports/operational.csv" class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Export CSV</a>
+                </div>
+            </form>
+
+            <div class="grid gap-6 xl:grid-cols-[1fr_auto_1fr]">
+                <div>
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Operasional Tambak</h2>
+                            <p class="text-sm text-gray-400">Kolam, siklus aktif, benur, pakan, dan estimasi biomassa.</p>
+                        </div>
+                        <a href="http://10.10.31.40:8282/stocking" class="text-sm font-medium text-blue-600 hover:text-blue-700">Review Siklus</a>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-5 md:grid-cols-4">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Kolam</div>
+                            <div class="mt-1 text-2xl font-semibold text-gray-900">6</div>
+                            <div class="text-xs text-gray-400">6 siap tebar</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Siklus Aktif</div>
+                            <div class="mt-1 text-2xl font-semibold text-green-600">1</div>
+                            <div class="text-xs text-gray-400">2.000 benur</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Pakan</div>
+                            <div class="mt-1 text-2xl font-semibold text-blue-600">10,00</div>
+                            <div class="text-xs text-gray-400">Kg input</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Biomassa</div>
+                            <div class="mt-1 text-2xl font-semibold text-amber-600">40,00</div>
+                            <div class="text-xs text-gray-400">Kg estimasi</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden w-px bg-gray-200 xl:block"></div>
+
+                <div>
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Keuangan Ringkas</h2>
+                            <p class="text-sm text-gray-400">Biaya operasional, nilai panen, HPP, dan piutang invoice.</p>
+                        </div>
+                        <a href="http://10.10.31.40:8282/sales-invoices" class="text-sm font-medium text-blue-600 hover:text-blue-700">Review Invoice</a>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-5 md:grid-cols-4">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Biaya</div>
+                            <div class="mt-1 text-2xl font-semibold text-red-600">IDR 1.800</div>
+                            <div class="text-xs text-gray-400">Pakan + treatment</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Panen</div>
+                            <div class="mt-1 text-2xl font-semibold text-green-600">IDR 5.000</div>
+                            <div class="text-xs text-gray-400">50,00 kg</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">HPP / Kg</div>
+                            <div class="mt-1 text-2xl font-semibold text-blue-600">IDR 36</div>
+                            <div class="text-xs text-gray-400">Dasar siklus</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Margin</div>
+                            <div class="mt-1 text-2xl font-semibold text-green-600">IDR 3.200</div>
+                            <div class="text-xs text-gray-400">Panen - biaya</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Performance Siklus Aktif</h2>
+                        <p class="text-sm text-gray-500">Ringkasan biaya, pakan, panen, dan HPP per kolam.</p>
+                    </div>
+                    <div class="text-xs text-gray-400">Updated 23:22:29</div>
+                </div>
+
+                <div class="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Kolam</th>
+                                <th class="px-4 py-3 text-left">DOC</th>
+                                <th class="px-4 py-3 text-right">Pakan</th>
+                                <th class="px-4 py-3 text-right">Panen</th>
+                                <th class="px-4 py-3 text-right">Biaya</th>
+                                <th class="px-4 py-3 text-right">HPP</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="font-semibold text-gray-900">QA.HPP.093451592</div>
+                                        <div class="text-xs text-gray-400">QA-HPP-093451592 - Siklus 1</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600">9.9739529324421</td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-900">10,00 kg</td>
+                                    <td class="px-4 py-3 text-right font-medium text-green-700">50,00 kg</td>
+                                    <td class="px-4 py-3 text-right text-gray-700">IDR 1.800</td>
+                                    <td class="px-4 py-3 text-right font-semibold text-blue-600">IDR 36</td>
+                                </tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Health Indicator</h2>
+                    <p class="text-sm text-gray-500">Indikator cepat untuk monitoring manajemen.</p>
+                </div>
+
+                <div class="mt-5 space-y-5">
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-semibold text-gray-900">Survival Rate</span>
+                            <span class="font-semibold text-green-600">0,00%</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-green-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-semibold text-gray-900">ABW Rata-rata</span>
+                            <span class="font-semibold text-blue-600">5,00 g</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-blue-500" style="width: 17%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-semibold text-gray-900">Invoice Outstanding</span>
+                            <span class="font-semibold text-red-600">IDR 750.000</span>
+                        </div>
+                        <div class="mt-2 h-2 rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-red-500" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-5 text-sm">
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-gray-400">Treatment</div>
+                            <div class="mt-1 font-semibold text-gray-900">IDR 500</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-gray-400">Probiotik</div>
+                            <div class="mt-1 font-semibold text-gray-900">IDR 300</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-gray-400">Harga Item</div>
+                            <div class="mt-1 font-semibold text-gray-900">6</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold uppercase text-gray-400">Master Item</div>
+                            <div class="mt-1 font-semibold text-gray-900">7</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Laporan Per Kolam Per Siklus</h2>
+                    <p class="text-sm text-gray-500">Produktivitas, SR, FCR, biaya, panen, dan HPP.</p>
+                </div>
+                <div class="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600"><tr><th class="px-4 py-3 text-left">Kolam</th><th class="px-4 py-3 text-right">Panen</th><th class="px-4 py-3 text-right">Kg/m2</th><th class="px-4 py-3 text-right">SR</th><th class="px-4 py-3 text-right">FCR</th><th class="px-4 py-3 text-right">HPP</th></tr></thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr><td class="px-4 py-3"><div class="font-semibold text-gray-900">QA.CYCLE.100522894</div><div class="text-xs text-gray-400">QA-CYCLE-100522894 - Siklus 1</div></td><td class="px-4 py-3 text-right">0,00 kg</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right font-semibold text-blue-600">-</td></tr>
+                                                            <tr><td class="px-4 py-3"><div class="font-semibold text-gray-900">QA.HPP.093451592</div><div class="text-xs text-gray-400">QA-HPP-093451592 - Siklus 1</div></td><td class="px-4 py-3 text-right">50,00 kg</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">0,25</td><td class="px-4 py-3 text-right font-semibold text-blue-600">IDR 36</td></tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Laporan Per Blok</h2>
+                    <p class="text-sm text-gray-500">Rekap biaya, panen, revenue, dan kg/m2 per blok.</p>
+                </div>
+                <div class="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600"><tr><th class="px-4 py-3 text-left">Blok</th><th class="px-4 py-3 text-right">Kolam</th><th class="px-4 py-3 text-right">Panen</th><th class="px-4 py-3 text-right">Kg/m2</th><th class="px-4 py-3 text-right">Biaya</th><th class="px-4 py-3 text-right">Revenue</th></tr></thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr><td class="px-4 py-3 font-semibold text-gray-900">QA-CYCLE-100522894</td><td class="px-4 py-3 text-right">1</td><td class="px-4 py-3 text-right">0,00 kg</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">IDR 0</td><td class="px-4 py-3 text-right font-semibold text-green-700">IDR 0</td></tr>
+                                                            <tr><td class="px-4 py-3 font-semibold text-gray-900">QA-HPP-093451592</td><td class="px-4 py-3 text-right">1</td><td class="px-4 py-3 text-right">50,00 kg</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">IDR 1.800</td><td class="px-4 py-3 text-right font-semibold text-green-700">IDR 5.000</td></tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Laporan Per Kolam Per Bulan</h2>
+                    <p class="text-sm text-gray-500">Rekap panen bulanan per kolam.</p>
+                </div>
+                <div class="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600"><tr><th class="px-4 py-3 text-left">Periode</th><th class="px-4 py-3 text-left">Kolam</th><th class="px-4 py-3 text-right">Panen</th><th class="px-4 py-3 text-right">Kg/m2</th><th class="px-4 py-3 text-right">Nilai</th></tr></thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr><td class="px-4 py-3">2026-07</td><td class="px-4 py-3"><div class="font-semibold text-gray-900">QA.HPP.093451592</div><div class="text-xs text-gray-400">QA-HPP-093451592</div></td><td class="px-4 py-3 text-right">50,00 kg</td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right font-semibold text-green-700">IDR 5.000</td></tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="border-b border-gray-100 pb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Harvest Performance</h2>
+                    <p class="text-sm text-gray-500">DOC, MBW, size, tonnage, biomass, dan population.</p>
+                </div>
+                <div class="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-600"><tr><th class="px-4 py-3 text-left">Kolam</th><th class="px-4 py-3 text-right">DOC</th><th class="px-4 py-3 text-right">MBW</th><th class="px-4 py-3 text-right">Size</th><th class="px-4 py-3 text-right">Tonnage</th><th class="px-4 py-3 text-right">Biomass</th><th class="px-4 py-3 text-right">Population</th></tr></thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                                                            <tr><td class="px-4 py-3"><div class="font-semibold text-gray-900">QA.HPP.093451592</div><div class="text-xs text-gray-400">QA-HPP-093451592 - 09 Jul 2026</div></td><td class="px-4 py-3 text-right">-</td><td class="px-4 py-3 text-right">5,00 g</td><td class="px-4 py-3 text-right">0,00</td><td class="px-4 py-3 text-right">50,00 kg</td><td class="px-4 py-3 text-right">40,00 kg</td><td class="px-4 py-3 text-right">0</td></tr>
+                                                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">Aktivitas Modul</h2>
+                    <p class="text-sm text-gray-500">Jumlah transaksi dan nilai utama per modul.</p>
+                </div>
+                <a href="http://10.10.31.40:8282/pond-monitor" class="text-sm font-medium text-blue-600 hover:text-blue-700">Buka Monitor</a>
+            </div>
+
+            <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    <a href="http://10.10.31.40:8282/feeding" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Pakan Harian</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 1.000</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                                    <a href="http://10.10.31.40:8282/sampling" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Sampling</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 40</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                                    <a href="http://10.10.31.40:8282/treatments" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Saprotam &amp; Treatment</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 500</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                                    <a href="http://10.10.31.40:8282/probiotics" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Probiotik</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 300</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                                    <a href="http://10.10.31.40:8282/harvests" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Panen</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 5.000</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                                    <a href="http://10.10.31.40:8282/sales-invoices" class="rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold text-gray-900">Invoice</div>
+                            <div class="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">1 data</div>
+                        </div>
+                        <div class="mt-4 text-xl font-semibold text-gray-900">IDR 750.000</div>
+                        <div class="mt-1 text-xs text-gray-400">Klik untuk review detail modul</div>
+                    </a>
+                            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const mode = document.getElementById('dashboardPeriodMode');
+            const dates = document.querySelectorAll('[data-period-date]');
+            if (!mode || !dates.length) return;
+
+            function syncPeriodInputs() {
+                const isCustom = mode.value === 'custom';
+                dates.forEach((input) => {
+                    input.disabled = !isCustom;
+                    input.classList.toggle('cursor-not-allowed', !isCustom);
+                });
+            }
+
+            mode.addEventListener('change', syncPeriodInputs);
+            syncPeriodInputs();
+        })();
+    </script>
+        </main>
+
+        <footer class="bottom-status h-10 px-8 flex items-center justify-between text-xs flex-shrink-0">
+            <div><i class="fas fa-shield-alt mr-2"></i> Secured by PT. SEKARBUMI TBK - SBB Tambak</div>
+            <div class="flex items-center gap-5">
+                <span><i class="fas fa-server mr-2"></i> Server: server</span>
+                <span><i class="far fa-clock mr-2"></i>23.22.29</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        (function () {
+            const sidebar = document.querySelector('.sidebar');
+            const nav = document.getElementById('sidebarNav');
+            if (!sidebar || !nav) return;
+
+            function sameOriginInternal(url) {
+                return url.origin === window.location.origin && !url.hash && url.pathname !== window.location.pathname;
+            }
+
+            function executeScripts(container) {
+                container.querySelectorAll('script').forEach(function (oldScript) {
+                    const script = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(function (attr) {
+                        script.setAttribute(attr.name, attr.value);
+                    });
+                    script.text = oldScript.textContent;
+                    oldScript.replaceWith(script);
+                });
+            }
+
+            function syncActiveNav(nextDocument) {
+                const nextNav = nextDocument.getElementById('sidebarNav');
+                if (!nextNav) return;
+
+                const currentLinks = nav.querySelectorAll('a[href]');
+                const nextLinks = nextNav.querySelectorAll('a[href]');
+                currentLinks.forEach(function (link, index) {
+                    const nextClass = nextLinks[index] ? nextLinks[index].getAttribute('class') : null;
+                    if (nextClass !== null) {
+                        link.setAttribute('class', nextClass);
+                    }
+                });
+            }
+
+            async function loadInternalPage(url, pushState) {
+                const navScroll = nav.scrollTop;
+                sidebar.dataset.loading = '1';
+
+                const response = await fetch(url.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) {
+                    window.location.href = url.toString();
+                    return;
+                }
+
+                const html = await response.text();
+                const nextDocument = new DOMParser().parseFromString(html, 'text/html');
+                const nextMain = nextDocument.getElementById('appMain');
+                const currentMain = document.getElementById('appMain');
+                const nextTopbar = nextDocument.getElementById('appTopbar');
+                const currentTopbar = document.getElementById('appTopbar');
+
+                if (!nextMain || !currentMain || !nextTopbar || !currentTopbar) {
+                    window.location.href = url.toString();
+                    return;
+                }
+
+                document.title = nextDocument.title;
+                currentTopbar.innerHTML = nextTopbar.innerHTML;
+                currentMain.innerHTML = nextMain.innerHTML;
+                executeScripts(currentMain);
+                syncActiveNav(nextDocument);
+                nav.scrollTop = navScroll;
+                currentMain.scrollTop = 0;
+
+                if (pushState) {
+                    history.pushState({ sbbPjax: true }, '', url.toString());
+                }
+
+                delete sidebar.dataset.loading;
+            }
+
+            nav.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link) return;
+
+                const url = new URL(link.href, window.location.href);
+                if (!sameOriginInternal(url) || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                    return;
+                }
+
+                event.preventDefault();
+                loadInternalPage(url, true).catch(function () {
+                    window.location.href = url.toString();
+                });
+            });
+
+            window.addEventListener('popstate', function () {
+                loadInternalPage(new URL(window.location.href), false).catch(function () {
+                    window.location.reload();
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

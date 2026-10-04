@@ -1,0 +1,16 @@
+{
+  "app": "Kurmigo HRIS Android WebView Shell",
+  "platform": "android",
+  "mode": "full_webview",
+  "admin_url": "https://31.97.106.123:8091",
+  "ess_entry_url": "https://31.97.106.123:8092/ess/request-center-entry",
+  "javascript_bridge": "KurmigoNative.postMessage",
+  "capabilities": [
+    "device.info",
+    "location.current",
+    "camera.selfie",
+    "file.download",
+    "biometric.verify",
+    "notification.badge"
+  ]
+}

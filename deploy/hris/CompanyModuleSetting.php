@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class CompanyModuleSetting extends Model
+{
+    protected $fillable = [
+        'company_id',
+        'module_setting_id',
+        'is_enabled',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_enabled' => 'boolean',
+        ];
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function moduleSetting(): BelongsTo
+    {
+        return $this->belongsTo(ModuleSetting::class);
+    }
+}

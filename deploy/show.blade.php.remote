@@ -1,0 +1,1752 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header - Modern Professional Version -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-6">
+            <div class="mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+                    <div class="flex-1 min-w-0 md:pr-6">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1e3a5f] to-[#2d4a7c] flex items-center justify-center shadow-sm">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{{ $board->name }}</h1>
+                            @if($permission === 'owner')
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">🔐 Owner</span>
+                            @elseif($permission === 'edit')
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">✏️ Can Edit</span>
+                            @else
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">👁️ View Only</span>
+                            @endif
+                        </div>
+                        @if($board->description)
+                        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-none leading-6 break-words">{{ preg_replace('/\s+/', ' ', trim($board->description)) }}</p>
+                        @endif
+                        <div class="flex items-center gap-4 mt-3 text-xs text-gray-400 dark:text-gray-500">
+                            <span>📋 {{ $board->lists->count() }} Lists</span>
+                            <span>📝 {{ $board->lists->sum(fn($l) => $l->tasks->count()) }} Tasks</span>
+                            <span>👥 {{ $board->sharedUsers->count() + 1 }} Members</span>
+                            <span class="flex items-center gap-1">
+                                @if($board->cover_enabled)
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    <span>Cover: On</span>
+                                @else
+                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                                    <span>Cover: Off</span>
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#2d4a7c] flex items-center justify-center text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800 shadow-sm">
+                                {{ substr($board->owner->name, 0, 1) }}
+                            </div>
+                            @foreach($board->sharedUsers->take(3) as $sharedUser)
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-white dark:ring-gray-800 shadow-sm" title="{{ $sharedUser->name }}">
+                                {{ substr($sharedUser->name, 0, 1) }}
+                            </div>
+                            @endforeach
+                            @if($board->sharedUsers->count() > 3)
+                            <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs font-bold ring-2 ring-white dark:ring-gray-800 shadow-sm">
+                                +{{ $board->sharedUsers->count() - 3 }}
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons - Modern Professional Design -->
+            <div class="flex flex-wrap gap-2">
+                <!-- GROUP 1: VIEW CONTROLS -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <button onclick="toggleCompactMode()" id="compactModeBtn" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Toggle Compact Mode">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                        </svg>
+                        <span id="compactModeText">Compact</span>
+                    </button>
+                    
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <div class="flex items-center gap-2 px-2">
+                        <span class="text-gray-500 dark:text-gray-400 text-sm">🔍</span>
+                        <input type="range" id="zoomSlider" min="70" max="150" value="100" step="5" 
+                               class="w-24 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        <span id="zoomValue" class="text-xs font-mono font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 px-2 py-0.5 rounded-md shadow-sm min-w-[50px] text-center">100%</span>
+                        <button id="resetZoomBtn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                                title="Reset Zoom to 100%">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    @if($permission === 'owner')
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <div class="flex items-center gap-2 px-2 relative group">
+                        <span class="text-gray-500 dark:text-gray-400 text-sm">🖼️</span>
+                        <label class="relative inline-flex items-center cursor-pointer group">
+                            <input type="checkbox" id="coverToggle" class="sr-only peer" {{ $board->cover_enabled ? 'checked' : '' }}>
+                            <div class="w-10 h-5 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                            <span class="ml-2 text-xs text-gray-600 dark:text-gray-400">Cover</span>
+                        </label>
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                            {{ $board->cover_enabled ? 'Click to disable cover images on all cards' : 'Click to enable cover images on all cards' }}
+                        </div>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- GROUP 2: BOARD SETTINGS (OWNER ONLY) -->
+                @if($permission === 'owner')
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <button onclick="openShareModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Share board with other users">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                        </svg>
+                        <span>Share</span>
+                    </button>
+                    
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <button onclick="openAutoArchiveModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Auto archive settings">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                        </svg>
+                        <span>Auto</span>
+                    </button>
+                </div>
+                @endif
+
+                <!-- GROUP 3: TASK CUSTOMIZATION -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <button onclick="openLabelsModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Manage labels">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l5 5a2 2 0 01.586 1.414V19a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+                        </svg>
+                        <span>Labels</span>
+                    </button>
+                    
+                    <button onclick="openLabelGuideModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Label guide and best practices">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <span>Guide</span>
+                    </button>
+                    
+                    @if($permission === 'owner')
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <button onclick="openCustomFieldsModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Manage custom fields">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                        <span>Fields</span>
+                    </button>
+                    @endif
+                </div>
+
+                <!-- GROUP 4: TASK MANAGEMENT -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <a href="{{ route('boards.archived', $board) }}" 
+                       class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                       title="View archived tasks">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                        </svg>
+                        <span>Archived</span>
+                    </a>
+                    
+                    @if($permission !== 'view')
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <button onclick="toggleBulkMode()" id="bulkModeBtn" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Bulk edit tasks">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                        <span>Bulk</span>
+                    </button>
+                    @endif
+                </div>
+
+                <!-- GROUP 5: TEMPLATES & UTILITIES -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <button onclick="openTemplatesModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Task templates">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                        </svg>
+                        <span>Templates</span>
+                    </button>
+                </div>
+
+                <!-- GROUP 6: VIEWS & REPORTS -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <a href="{{ route('boards.activity-log', $board) }}" 
+                       class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                       title="View activity log">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Activity</span>
+                    </a>
+                    
+                    <a href="{{ route('boards.calendar', $board) }}" 
+                       class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                       title="Calendar view">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Calendar</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <a href="{{ route('boards.dashboard', $board) }}" 
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                    title="Statistics dashboard">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                    
+                    <a href="{{ route('boards.gantt', $board) }}" 
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                    title="Gantt chart view">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span>Gantt</span>
+                    </a>
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+                    <a href="{{ route('boards.wbs', $board) }}"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                    title="Work Breakdown Structure">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6v6H4V6zm10 0h6v6h-6V6zM4 16h6v2H4v-2zm10 0h6v2h-6v-2z"></path>
+                        </svg>
+                        <span>WBS</span>
+                    </a>
+                    
+                </div>
+
+                <!-- GROUP 7: EXPORT -->
+                <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-sm">
+                    <button onclick="openExportModal()" 
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm text-gray-700 dark:text-gray-200 cursor-pointer group"
+                            title="Export data (CSV, Excel, PDF)">
+                        <svg class="w-4 h-4 transition-transform group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span>Export</span>
+                    </button>
+                </div>
+
+                <!-- PRIMARY ACTION: ADD LIST -->
+                <button onclick="openAddListModal()" 
+                        class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-[#1e3a5f] to-[#2d4a7c] hover:from-[#2d4a7c] hover:to-[#1e3a5f] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span>Add List</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Kanban Board Container with Zoom -->
+        <div class="kanban-board-container overflow-x-auto pb-4" id="kanbanBoardContainer">
+            <div class="kanban-board flex items-start gap-4" id="kanbanBoard">
+                @foreach($board->lists as $list)
+                <div class="kanban-list flex-shrink-0" data-list-id="{{ $list->id }}" style="width: {{ session('list_width_' . $list->id, 320) }}px; min-width: 250px;">
+                    <div class="list-header rounded-t-lg p-3 cursor-move" style="background-color: {{ $list->color }}; color: {{ $list->color == '#e2e8f0' || $list->color == '#f3f4f6' || $list->color == '#ffffff' || $list->color == '#f1f5f9' ? '#1f2937' : 'white' }};">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-semibold">{{ $list->name }}</h3>
+                                <span class="text-xs rounded-full px-2 py-0.5" style="background-color: rgba(0,0,0,0.15); color: inherit;">{{ $list->tasks->count() }}</span>
+                            </div>
+                            @if($permission !== 'view')
+                            <div class="flex gap-1">
+                                <button onclick="editList({{ $list->id }}, '{{ $list->name }}', '{{ $list->color }}')" class="p-1 rounded hover:bg-black hover:bg-opacity-20 transition cursor-pointer" style="color: inherit;">✏️</button>
+                                <button onclick="deleteList({{ $list->id }})" class="p-1 rounded hover:bg-black hover:bg-opacity-20 transition cursor-pointer" style="color: inherit;">🗑️</button>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="resize-handle" data-list-id="{{ $list->id }}"></div>
+                    <div class="list-tasks p-3 space-y-2 min-h-32" data-list-id="{{ $list->id }}">
+                       @foreach($list->tasks as $task)
+@php
+    $cover = $task->attachments->where('is_cover', true)->first();
+    $hasCover = $cover && $cover->isImage();
+    $showCover = $board->cover_enabled ?? true;
+    
+    $totalItems = 0;
+    $completedItems = 0;
+    foreach($task->checklists as $checklist) {
+        $totalItems += $checklist->items->count();
+        $completedItems += $checklist->items->where('is_checked', true)->count();
+    }
+    $remainingItems = $totalItems - $completedItems;
+    $checklistProgress = $totalItems > 0 ? round(($completedItems / $totalItems) * 100) : 0;
+    $taskProgress = max(0, min(100, (int) ($task->progress ?? 0)));
+    
+    $dueDateClass = '';
+    $dueDateText = '';
+    if ($task->due_date) {
+        $today = new DateTime();
+        $due = new DateTime($task->due_date);
+        $diff = $today->diff($due);
+        $daysLeft = $due > $today ? $diff->days : -$diff->days;
+        if ($due < $today) {
+            $dueDateClass = 'due-date-overdue';
+            $dueDateText = 'OVERDUE!';
+        } elseif ($daysLeft == 0) {
+            $dueDateClass = 'due-date-today';
+            $dueDateText = 'Due TODAY!';
+        } elseif ($daysLeft == 1) {
+            $dueDateClass = 'due-date-tomorrow';
+            $dueDateText = 'Due tomorrow';
+        }
+    }
+    
+    $hasAttachments = $task->attachments->count() > 0;
+    $hasDescription = !empty($task->description);
+    $commentCount = $task->comments->count();
+    
+    $isAging = method_exists($task, 'isAging') ? $task->isAging() : false;
+    $agingLevel = method_exists($task, 'getAgingLevel') ? $task->getAgingLevel() : 0;
+    $agingStyle = '';
+    if ($isAging && $agingLevel > 0) {
+        $opacity = 100 - ($agingLevel * 15);
+        $agingStyle = 'opacity: ' . ($opacity / 100) . '; filter: grayscale(' . ($agingLevel * 0.1) . ');';
+    }
+@endphp
+
+<div class="task-card group cursor-pointer bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden {{ $isAging ? 'card-aging' : '' }}" 
+     data-task-id="{{ $task->id }}" 
+     onclick="if (!event.target.closest('button') && !event.target.closest('.task-bulk-checkbox')) openTaskDetailModal({{ $task->id }})"
+     @if($agingStyle) style="{{ $agingStyle }}" @endif>
+    
+    <div class="absolute top-2 left-2 z-10 bulk-checkbox-container" style="display: none;">
+        <input type="checkbox" class="task-bulk-checkbox w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer" 
+               data-task-id="{{ $task->id }}" onclick="event.stopPropagation()">
+    </div>
+    
+@if($showCover)
+    @if($hasCover)
+    <div class="task-cover relative w-full overflow-hidden bg-gray-200 dark:bg-gray-700" style="aspect-ratio: 16 / 9;">
+        <img src="{{ $cover->file_path }}" 
+             alt="Cover" 
+             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+             loading="lazy" 
+             onerror="this.style.display='none'; this.parentElement.style.display='none'">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1">
+            <button onclick="event.stopPropagation(); uploadCoverForTask({{ $task->id }})" 
+                    class="bg-black/50 hover:bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm transition cursor-pointer">
+                📤 Upload Cover
+            </button>
+            <button onclick="event.stopPropagation(); removeCoverFromCard({{ $task->id }})" 
+                    class="bg-black/50 hover:bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm transition cursor-pointer">
+                ❌ Remove
+            </button>
+        </div>
+    </div>
+    @else
+    <div class="task-cover relative w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800" style="aspect-ratio: 16 / 9;">
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span class="text-xs text-gray-400 dark:text-gray-500">No Cover</span>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button onclick="event.stopPropagation(); uploadCoverForTask({{ $task->id }})" 
+                    class="bg-black/50 hover:bg-black/70 text-white text-xs px-2 py-1 rounded backdrop-blur-sm transition cursor-pointer">
+                📤 Upload Cover
+            </button>
+        </div>
+    </div>
+    @endif
+@else
+    <div class="task-cover-disabled" style="display: none;"></div>
+@endif
+    
+    <div class="p-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="flex flex-wrap gap-1">
+                @if($totalItems > 0)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded {{ $remainingItems == 0 ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">
+                    ✅ <span>{{ $completedItems }}/{{ $totalItems }}</span>
+                </span>
+                @endif
+                @if($hasAttachments)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    📎 <span>{{ $task->attachments->count() }}</span>
+                </span>
+                @endif
+                @if($commentCount > 0)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    💬 <span>{{ $commentCount }}</span>
+                </span>
+                @endif
+                @if($hasDescription)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                    📝
+                </span>
+                @endif
+                @if($taskProgress > 0)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" title="Work progress: {{ $taskProgress }}%">
+                    📈 <span>{{ $taskProgress }}%</span>
+                </span>
+                @endif
+                @if($isAging)
+                <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300" title="Not updated for {{ method_exists($task, 'getDaysSinceLastUpdate') ? $task->getDaysSinceLastUpdate() : '?' }} days">
+                    🕰️ {{ method_exists($task, 'getDaysSinceLastUpdate') ? $task->getDaysSinceLastUpdate() : '?' }}d
+                </span>
+                @endif
+            </div>
+            <div class="flex items-center gap-2">
+                @if($task->due_date)
+                <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg {{ $dueDateClass }}">
+                    📅 <span>{{ $task->due_date->format('d M') }}</span>
+                    @if($dueDateText) <span class="font-semibold ml-0.5">({{ $dueDateText }})</span> @endif
+                </span>
+                @endif
+            </div>
+        </div>
+        
+        <div class="task-labels flex flex-wrap gap-1 mb-2" onclick="event.stopPropagation()">
+            @foreach($task->labels->take(3) as $label)
+            <span class="text-xs px-2 py-0.5 rounded-full" 
+                  style="background-color: {{ $label->color }}20; color: {{ $label->color }}; border-left: 3px solid {{ $label->color }}">
+                {{ $label->name }}
+                @if($permission !== 'view')
+                <button onclick="event.stopPropagation(); removeLabelFromTaskCard({{ $task->id }}, {{ $label->id }})" 
+                        class="hover:opacity-70 ml-1 cursor-pointer">&times;</button>
+                @endif
+            </span>
+            @endforeach
+            @if($task->labels->count() > 3)
+            <span class="text-xs text-gray-400 dark:text-gray-500">+{{ $task->labels->count() - 3 }}</span>
+            @endif
+            @if($permission !== 'view')
+            <button onclick="event.stopPropagation(); openAssignLabelModal({{ $task->id }})" 
+                    class="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 px-1 rounded cursor-pointer">
+                + Add label
+            </button>
+            @endif
+        </div>
+        
+        <h4 class="font-medium text-gray-800 dark:text-gray-200 text-sm mb-2 pr-6 line-clamp-2">{{ $task->title }}</h4>
+        
+        @if($hasDescription)
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{{ Str::limit($task->description, 80) }}</p>
+        @endif
+        
+        @if($taskProgress > 0)
+        <div class="mb-2" title="Work progress: {{ $taskProgress }}%">
+            <div class="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-1">
+                <span>Progress</span>
+                <span>{{ $taskProgress }}%</span>
+            </div>
+            <div class="w-full bg-blue-100 dark:bg-blue-950 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-[#1e3a5f] rounded-full h-1.5 transition-all duration-300" style="width: {{ $taskProgress }}%"></div>
+            </div>
+        </div>
+        @endif
+
+        @if($totalItems > 0)
+        <div class="mb-2" title="Checklist progress: {{ $completedItems }}/{{ $totalItems }}">
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-green-500 rounded-full h-1.5 transition-all duration-300" style="width: {{ $checklistProgress }}%"></div>
+            </div>
+        </div>
+        @endif
+        
+        <div class="flex justify-between items-center mt-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+            <div class="flex items-center -space-x-1">
+                @if($task->assignees && $task->assignees->count() > 0)
+                    @foreach($task->assignees->take(3) as $assignee)
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white dark:ring-gray-800" 
+                         style="background: linear-gradient(135deg, #1e3a5f, #2d4a7c);" 
+                         title="{{ $assignee->name }}">
+                        {{ substr($assignee->name, 0, 1) }}
+                    </div>
+                    @endforeach
+                    @if($task->assignees->count() > 3)
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 text-xs font-bold ring-2 ring-white dark:ring-gray-800" 
+                         title="{{ $task->assignees->count() - 3 }} more">
+                        +{{ $task->assignees->count() - 3 }}
+                    </div>
+                    @endif
+                @else
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs" title="No assignee">
+                    👤
+                </div>
+                @endif
+            </div>
+            
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                @if($permission !== 'view')
+                    @if(auth()->user()->isAdmin())
+                    <button onclick="event.stopPropagation(); deleteTaskCard({{ $task->id }}, '{{ addslashes($task->title) }}')" 
+                            class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs cursor-pointer px-1" title="Delete">
+                        🗑️
+                    </button>
+                    @endif
+                    <button onclick="event.stopPropagation(); archiveTask({{ $task->id }}, '{{ addslashes($task->title) }}')" 
+                            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-xs cursor-pointer px-1" title="Archive">
+                        📦
+                    </button>
+                    <button onclick="event.stopPropagation(); openEditTaskModal({{ $task->id }})" 
+                            class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs cursor-pointer px-1" title="Edit">
+                        ✏️
+                    </button>
+                @endif
+                <button onclick="event.stopPropagation(); showTaskActivityV2({{ $task->id }})" 
+                        class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 text-xs cursor-pointer px-1" title="History">
+                        📋
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
+                        @if($permission !== 'view')
+                        <button onclick="openAddTaskModal({{ $list->id }})" class="w-full text-left text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded transition text-sm cursor-pointer">+ Add a card</button>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="bulkActionBar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-[#1e3a5f] text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-4 animate-bounce-in">
+    <span id="selectedCount" class="font-semibold">0 selected</span>
+    <button onclick="bulkArchive()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition text-sm font-medium flex items-center gap-2 cursor-pointer">📦 Archive Selected</button>
+    <button onclick="cancelBulkMode()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition text-sm font-medium cursor-pointer">Cancel</button>
+</div>
+
+@include('boards.partials.modals')
+@include('boards.partials.share-modal')
+@include('boards.partials.activity-modal')
+@include('boards.partials.label-modal')
+@include('boards.partials.label-guide-modal')
+@include('boards.partials.task-detail-modal')
+@include('boards.partials.scripts')
+@include('boards.partials.export-modal')
+@include('boards.partials.custom-fields-modal')
+
+<!-- Auto Archive Modal -->
+<div id="autoArchiveModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 border-0 w-full max-w-md shadow-xl rounded-xl bg-white dark:bg-gray-800">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-[#1e3a5f] dark:text-white flex items-center gap-2"><span>⚙️</span> Auto Archive Settings</h3>
+            <button onclick="closeAutoArchiveModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 text-2xl transition cursor-pointer">&times;</button>
+        </div>
+        <form id="autoArchiveForm" onsubmit="saveAutoArchiveSettings(event)">
+            @csrf
+            <div class="mb-5">
+                <div class="flex items-center justify-between">
+                    <label class="text-gray-700 dark:text-gray-300 font-medium">Enable Auto Archive</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="autoArchiveEnabled" name="auto_archive_enabled" class="sr-only peer" {{ $board->auto_archive_enabled ? 'checked' : '' }}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Task akan otomatis di-archive setelah berada di list target selama X hari</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Target List Name</label>
+                <input type="text" id="autoArchiveListName" name="auto_archive_list_name" value="{{ $board->auto_archive_list_name ?? 'Done' }}" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]" placeholder="Contoh: Done, Selesai, Completed">
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Task di list dengan nama ini yang akan di-archive otomatis</p>
+            </div>
+            <div class="mb-5">
+                <label class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Archive After (Days)</label>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="decrementDays()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-lg font-bold transition cursor-pointer">-</button>
+                    <input type="number" id="autoArchiveDays" name="auto_archive_days" value="{{ $board->auto_archive_days ?? 7 }}" class="w-20 text-center border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]" min="1" max="90">
+                    <button type="button" onclick="incrementDays()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-lg font-bold transition cursor-pointer">+</button>
+                    <span class="text-gray-500 dark:text-gray-400 text-sm">hari</span>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Available Lists in this Board</label>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($board->lists as $list)
+                    <span class="text-xs px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition" style="background-color: {{ $list->color }}20; color: {{ $list->color }};" onclick="document.getElementById('autoArchiveListName').value = '{{ $list->name }}'; updatePreview();">{{ $list->name }}</span>
+                    @endforeach
+                </div>
+            </div>
+            <div class="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-3 mb-5">
+                <div class="flex items-start gap-2"><span class="text-blue-500 text-lg">💡</span><div class="text-xs text-blue-800 dark:text-blue-300"><p class="font-medium mb-1">Cara Kerja:</p><p>Task yang masuk ke list <strong id="previewListName">{{ $board->auto_archive_list_name ?? 'Done' }}</strong> akan di-archive setelah <strong id="previewDays">{{ $board->auto_archive_days ?? 7 }}</strong> hari</p></div></div>
+            </div>
+            <div class="flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700 pt-4">
+                <button type="button" onclick="closeAutoArchiveModal()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium cursor-pointer">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-[#1e3a5f] text-white rounded-xl hover:bg-[#2d4a7c] transition font-medium cursor-pointer">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Templates Modal -->
+<div id="templatesModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-6 border-0 w-full max-w-5xl shadow-2xl rounded-2xl bg-white dark:bg-gray-800">
+        <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d4a7c] flex items-center justify-center shadow-md">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Task Templates</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Create and manage reusable task templates</p>
+                </div>
+            </div>
+            <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-all duration-200 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-2/5 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </div>
+                    <h4 class="font-semibold text-gray-800 dark:text-white text-lg">Create New Template</h4>
+                </div>
+                
+                <form id="createTemplateForm" onsubmit="createTemplate(event)" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Template Name *</label>
+                        <input type="text" id="templateName" placeholder="e.g., Bug Report Template" required class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
+                        <textarea id="templateDesc" placeholder="Describe what this template is for..." rows="2" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Priority</label>
+                        <select id="templatePriority" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] bg-white dark:bg-gray-700">
+                            <option value="low">🟢 Low</option>
+                            <option value="medium" selected>🟡 Medium</option>
+                            <option value="high">🔴 High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Checklist Items <span class="text-gray-400">(one per line)</span></label>
+                        <textarea id="templateChecklist" placeholder="Pemasangan kabel jaringan&#10;Konfigurasi IP address&#10;Testing koneksi&#10;Dokumentasi hasil" rows="4" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:border-transparent resize-none font-mono"></textarea>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">💡 Satu item per baris, mendukung teks panjang</p>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2d4a7c] text-white rounded-xl hover:from-[#2d4a7c] hover:to-[#1e3a5f] transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Create Template
+                    </button>
+                </form>
+            </div>
+            
+            <div class="lg:w-3/5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                        </div>
+                        <h4 class="font-semibold text-gray-800 dark:text-white">Your Templates</h4>
+                    </div>
+                    <span class="text-xs text-gray-400 dark:text-gray-500" id="templatesCount">0 templates</span>
+                </div>
+                
+                <div id="templatesList" class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                            <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">No templates yet</p>
+                        <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Create your first template using the form on the left</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+            <button onclick="closeTemplatesModal()" class="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 font-medium cursor-pointer flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-list { position: relative; transition: width 0.2s ease; }
+    .resize-handle { position: absolute; right: -4px; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background-color: transparent; transition: background-color 0.2s; z-index: 10; }
+    .resize-handle:hover { background-color: #f59e0b; }
+    .task-card { position: relative; transition: all 0.2s ease; cursor: pointer; overflow: visible; }
+    .task-card:active { cursor: grabbing; opacity: 0.5; }
+    .task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px -5px rgba(0, 0, 0, 0.1); }
+    .task-cover { position: relative; overflow: hidden; background-color: #f3f4f6; }
+    .task-cover img { transition: transform 0.3s ease; }
+    .task-card:hover .task-cover img { transform: scale(1.05); }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .compact-mode .kanban-list { width: 280px !important; }
+    .compact-mode .task-card { font-size: 0.875rem; padding: 0; }
+    .compact-mode .task-card .p-3 { padding: 0.65rem; }
+    .compact-mode .task-cover { aspect-ratio: 16 / 9; }
+    .kanban-board-container::-webkit-scrollbar { height: 8px; }
+    .kanban-board-container::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 4px; }
+    .kanban-board-container::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+    .bulk-checkbox-container { transition: opacity 0.2s ease; }
+    .task-bulk-checkbox { cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .task-bulk-checkbox:hover { transform: scale(1.05); }
+    @keyframes bounce-in { 0% { transform: translateX(-50%) scale(0.8); opacity: 0; } 80% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+    .animate-bounce-in { animation: bounce-in 0.3s ease-out; }
+    .due-date-tomorrow { background-color: #fef3c7; color: #d97706; border-left: 3px solid #f59e0b; }
+    .due-date-today { background-color: #fee2e2; color: #dc2626; border-left: 3px solid #ef4444; animation: pulse-red 1s infinite; }
+    .due-date-overdue { background-color: #fee2e2; color: #dc2626; border-left: 3px solid #ef4444; font-weight: bold; }
+    @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.7; background-color: #fecaca; } 100% { opacity: 1; } }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    .btn-outline { background-color: transparent; color: #1e3a5f; border: 1px solid #1e3a5f; transition: all 0.2s ease; border-radius: 0.5rem; padding: 0.5rem 1rem; font-weight: 500; cursor: pointer; }
+    .btn-outline:hover { background-color: #1e3a5f; color: white; transform: translateY(-1px); }
+    .btn-outline-accent { background-color: transparent; color: #10b981; border: 1px solid #10b981; transition: all 0.2s ease; border-radius: 0.5rem; padding: 0.5rem 1rem; font-weight: 500; cursor: pointer; }
+    .btn-outline-accent:hover { background-color: #10b981; color: white; transform: translateY(-1px); }
+    .btn-primary { background-color: #1e3a5f; color: white; transition: all 0.2s ease; border-radius: 0.5rem; padding: 0.5rem 1rem; font-weight: 500; cursor: pointer; border: none; }
+    .btn-primary:hover { background-color: #2d4a7c; transform: translateY(-1px); }
+    .btn-accent { background-color: #10b981; color: white; transition: all 0.2s ease; border-radius: 0.5rem; padding: 0.5rem 1rem; font-weight: 500; cursor: pointer; border: none; }
+    .btn-accent:hover { background-color: #34d399; transform: translateY(-1px); }
+    
+    .task-cover-disabled {
+        transition: all 0.2s ease;
+    }
+    .task-cover-disabled svg {
+        transition: transform 0.2s ease;
+    }
+    .task-card:hover .task-cover-disabled svg {
+        transform: scale(1.05);
+    }
+    
+    #coverToggle:disabled + div {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    #coverToggle:disabled {
+        cursor: not-allowed;
+    }
+    
+    .dark .board-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+    }
+    .dark .board-card:hover {
+        background-color: #374151;
+    }
+    .dark .btn-outline {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    .dark .btn-outline:hover {
+        background-color: var(--button-hover);
+    }
+    .dark .btn-accent {
+        background-color: #059669;
+    }
+    .dark .btn-accent:hover {
+        background-color: #10b981;
+    }
+    .dark .modal-modern {
+        background-color: var(--bg-secondary) !important;
+    }
+    .dark .modal-modern-header {
+        background-color: var(--bg-secondary);
+        border-bottom-color: var(--border-color);
+    }
+    .dark .modal-modern-body {
+        background-color: var(--bg-secondary);
+    }
+    .dark .modal-modern-footer {
+        background-color: var(--bg-secondary);
+        border-top-color: var(--border-color);
+    }
+    .dark #customFieldsModal .bg-gray-50,
+    .dark #customFieldsModal .bg-gradient-to-r {
+        background-color: var(--list-bg) !important;
+    }
+
+    .dark .due-date-overdue {
+        background-color: #7f1d1d !important;
+        color: #fca5a5 !important;
+        border-left: 3px solid #ef4444 !important;
+    }
+    .dark .due-date-today {
+        background-color: #7f1d1d !important;
+        color: #fca5a5 !important;
+        border-left: 3px solid #ef4444 !important;
+        animation: pulse-red-dark 1s infinite;
+    }
+    .dark .due-date-tomorrow {
+        background-color: #78350f !important;
+        color: #fcd34d !important;
+        border-left: 3px solid #f59e0b !important;
+    }
+    @keyframes pulse-red-dark {
+        0% { opacity: 1; background-color: #7f1d1d; }
+        50% { opacity: 0.8; background-color: #991b1b; }
+        100% { opacity: 1; background-color: #7f1d1d; }
+    }
+
+    .dark .bg-green-100 {
+        background-color: #065f46 !important;
+        color: #86efac !important;
+    }
+    .dark .bg-green-100 .text-green-700 {
+        color: #86efac !important;
+    }
+    .dark .bg-green-100 span {
+        color: #86efac !important;
+    }
+    .dark .bg-gray-100 {
+        background-color: #374151 !important;
+        color: #d1d5db !important;
+    }
+    .dark .bg-gray-100 span {
+        color: #d1d5db !important;
+    }
+    .dark .bg-gray-100 .text-gray-600 {
+        color: #d1d5db !important;
+    }
+    .dark .text-green-700 {
+        color: #86efac !important;
+    }
+    .dark .text-gray-600 {
+        color: #d1d5db !important;
+    }
+
+    .dark .bg-purple-100 {
+        background-color: #4c1d95 !important;
+    }
+    .dark .text-purple-700 {
+        color: #d8b4fe !important;
+    }
+    .dark .bg-purple-100 .text-purple-700 {
+        color: #d8b4fe !important;
+    }
+    .dark .bg-amber-100 {
+        background-color: #78350f !important;
+    }
+    .dark .text-amber-700 {
+        color: #fcd34d !important;
+    }
+    .dark .bg-amber-100 .text-amber-700 {
+        color: #fcd34d !important;
+    }
+
+    .action-group button,
+    .action-group a {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .group:hover svg {
+        transform: scale(1.05);
+    }
+    input[type="range"] {
+        -webkit-appearance: none;
+        background: transparent;
+    }
+    input[type="range"]:focus {
+        outline: none;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: #e5e7eb;
+        border-radius: 9999px;
+    }
+    .dark input[type="range"]::-webkit-slider-runnable-track {
+        background: #374151;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #1e3a5f;
+        cursor: pointer;
+        margin-top: -5px;
+        transition: all 0.2s;
+    }
+    .dark input[type="range"]::-webkit-slider-thumb {
+        background: #60a5fa;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+        background: #2d4a7c;
+    }
+    .dark input[type="range"]::-webkit-slider-thumb:hover {
+        background: #93c5fd;
+    }
+    .menu-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        font-size: 10px;
+        font-weight: 600;
+        background-color: #ef4444;
+        color: white;
+        border-radius: 9999px;
+        margin-left: 4px;
+    }
+    button.active,
+    a.active {
+        background-color: white !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .dark button.active,
+    .dark a.active {
+        background-color: #374151 !important;
+    }
+    .kanban-board-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        scrollbar-width: auto;
+        position: relative;
+        cursor: grab;
+        overscroll-behavior: contain;
+        height: calc(100vh - 230px);
+        min-height: 460px;
+    }
+    .kanban-board {
+        min-height: 100%;
+        min-width: max-content;
+    }
+    .kanban-list {
+        display: flex;
+        flex-direction: column;
+        background: #f8fafc;
+        border: 1px solid #d8e2ee;
+        border-radius: 0.5rem;
+        overflow: visible;
+    }
+    .dark .kanban-list {
+        background: #1e293b;
+        border-color: #374151;
+    }
+    .list-header,
+    .resize-handle {
+        flex-shrink: 0;
+    }
+    .list-tasks {
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+    .kanban-board-container:active {
+        cursor: grabbing;
+    }
+    .kanban-board-container::-webkit-scrollbar {
+        height: 12px;
+        width: 12px;
+    }
+    .kanban-board-container::-webkit-scrollbar-track {
+        background: #e5e7eb;
+        border-radius: 6px;
+    }
+    .dark .kanban-board-container::-webkit-scrollbar-track {
+        background: #374151;
+    }
+    .kanban-board-container::-webkit-scrollbar-thumb {
+        background: #1e3a5f;
+        border-radius: 6px;
+        transition: background 0.2s;
+    }
+    .dark .kanban-board-container::-webkit-scrollbar-thumb {
+        background: #60a5fa;
+    }
+    .kanban-board-container::-webkit-scrollbar-thumb:hover {
+        background: #2d4a7c;
+    }
+    .dark .kanban-board-container::-webkit-scrollbar-thumb:hover {
+        background: #93c5fd;
+    }
+    .kanban-board-container {
+        scrollbar-width: thin;
+    }
+    .kanban-board-container {
+        scroll-behavior: smooth;
+    }
+    .kanban-board-container.dragging {
+        user-select: none;
+        -webkit-user-select: none;
+        cursor: grabbing !important;
+        scroll-behavior: auto !important;
+    }
+</style>
+
+<script>
+// ==============================================
+// ZOOM / SCALE FUNCTIONALITY
+// ==============================================
+
+let currentZoom = localStorage.getItem('kanban_zoom') || 100;
+
+function initZoom() {
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+    const resetZoomBtn = document.getElementById('resetZoomBtn');
+    const boardContainer = document.querySelector('.kanban-board');
+    
+    if (!zoomSlider || !boardContainer) return;
+    
+    const savedZoom = localStorage.getItem('kanban_zoom');
+    if (savedZoom) {
+        currentZoom = savedZoom;
+        zoomSlider.value = currentZoom;
+        if (zoomValue) zoomValue.textContent = currentZoom + '%';
+        applyZoom(currentZoom);
+    } else {
+        zoomSlider.value = 100;
+        if (zoomValue) zoomValue.textContent = '100%';
+        applyZoom(100);
+    }
+    
+    zoomSlider.addEventListener('input', function(e) {
+        const zoom = parseInt(e.target.value);
+        currentZoom = zoom;
+        if (zoomValue) zoomValue.textContent = zoom + '%';
+        applyZoom(zoom);
+        localStorage.setItem('kanban_zoom', zoom);
+    });
+    
+    if (resetZoomBtn) {
+        resetZoomBtn.addEventListener('click', function() {
+            zoomSlider.value = 100;
+            currentZoom = 100;
+            if (zoomValue) zoomValue.textContent = '100%';
+            applyZoom(100);
+            localStorage.setItem('kanban_zoom', 100);
+        });
+    }
+}
+
+function applyZoom(zoom) {
+    const boardContainer = document.querySelector('.kanban-board');
+    if (!boardContainer) return;
+    
+    const zoomLevel = zoom / 100;
+    boardContainer.style.transform = `scale(${zoomLevel})`;
+    boardContainer.style.transformOrigin = 'top left';
+    boardContainer.style.width = zoomLevel === 1 ? '' : `${100 / zoomLevel}%`;
+
+    window.dispatchEvent(new Event('resize'));
+}
+
+// ==============================================
+// HELPER FUNCTIONS
+// ==============================================
+
+function removeLabelFromTaskCard(taskId, labelId) {
+    fetch(appUrl(`tasks/${taskId}/labels/${labelId}`), {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        }
+    }).then(() => location.reload());
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} dark:shadow-gray-800`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// ==============================================
+// AUTO ARCHIVE MODAL FUNCTIONS
+// ==============================================
+
+function openAutoArchiveModal() {
+    const modal = document.getElementById('autoArchiveModal');
+    if (modal) { modal.classList.remove('hidden'); updatePreview(); }
+}
+
+function closeAutoArchiveModal() {
+    const modal = document.getElementById('autoArchiveModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function decrementDays() {
+    const input = document.getElementById('autoArchiveDays');
+    if (!input) return;
+    let val = parseInt(input.value);
+    if (val > 1) { input.value = val - 1; updatePreview(); }
+}
+
+function incrementDays() {
+    const input = document.getElementById('autoArchiveDays');
+    if (!input) return;
+    let val = parseInt(input.value);
+    if (val < 90) { input.value = val + 1; updatePreview(); }
+}
+
+function updatePreview() {
+    const daysInput = document.getElementById('autoArchiveDays');
+    const listNameInput = document.getElementById('autoArchiveListName');
+    const previewDays = document.getElementById('previewDays');
+    const previewListName = document.getElementById('previewListName');
+    if (daysInput && previewDays) previewDays.textContent = daysInput.value;
+    if (listNameInput && previewListName) previewListName.textContent = listNameInput.value || 'Done';
+}
+
+function saveAutoArchiveSettings(event) {
+    event.preventDefault();
+    const enabled = document.getElementById('autoArchiveEnabled').checked;
+    const days = document.getElementById('autoArchiveDays').value;
+    const listName = document.getElementById('autoArchiveListName').value;
+    showNotification('Saving settings...', 'info');
+    fetch('{{ route("boards.auto-archive-settings", $board) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        body: JSON.stringify({ auto_archive_enabled: enabled, auto_archive_days: days, auto_archive_list_name: listName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Auto archive settings saved!', 'success');
+            closeAutoArchiveModal();
+            setTimeout(() => location.reload(), 800);
+        } else { showNotification('Failed to save: ' + (data.error || 'Unknown error'), 'error'); }
+    })
+    .catch(error => { console.error('Error:', error); showNotification('Error saving settings', 'error'); });
+}
+
+// ==============================================
+// BULK ARCHIVE FUNCTIONS
+// ==============================================
+
+let bulkModeActive = false;
+let selectedTasks = new Set();
+
+function toggleBulkMode() {
+    bulkModeActive = !bulkModeActive;
+    const bulkBtn = document.getElementById('bulkModeBtn');
+    const actionBar = document.getElementById('bulkActionBar');
+    const checkboxes = document.querySelectorAll('.task-bulk-checkbox');
+    const checkboxContainers = document.querySelectorAll('.bulk-checkbox-container');
+    if (bulkModeActive) {
+        if (bulkBtn) { bulkBtn.classList.add('bg-white', 'shadow-sm'); bulkBtn.style.backgroundColor = 'white'; bulkBtn.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; }
+        if (actionBar) actionBar.classList.remove('hidden');
+        checkboxContainers.forEach(container => { container.style.display = 'block'; });
+        selectedTasks.clear();
+        checkboxes.forEach(cb => { cb.checked = false; });
+        updateSelectedCount();
+    } else { cancelBulkMode(); }
+}
+
+function cancelBulkMode() {
+    bulkModeActive = false;
+    selectedTasks.clear();
+    const bulkBtn = document.getElementById('bulkModeBtn');
+    const actionBar = document.getElementById('bulkActionBar');
+    const checkboxes = document.querySelectorAll('.task-bulk-checkbox');
+    const checkboxContainers = document.querySelectorAll('.bulk-checkbox-container');
+    if (bulkBtn) { bulkBtn.classList.remove('bg-white', 'shadow-sm'); bulkBtn.style.backgroundColor = ''; bulkBtn.style.boxShadow = ''; }
+    if (actionBar) actionBar.classList.add('hidden');
+    checkboxContainers.forEach(container => { container.style.display = 'none'; });
+    checkboxes.forEach(cb => { cb.checked = false; });
+}
+
+function updateSelectedCount() {
+    const countSpan = document.getElementById('selectedCount');
+    if (countSpan) countSpan.textContent = `${selectedTasks.size} selected`;
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('task-bulk-checkbox')) {
+        const taskId = parseInt(e.target.dataset.taskId);
+        if (e.target.checked) selectedTasks.add(taskId);
+        else selectedTasks.delete(taskId);
+        updateSelectedCount();
+    }
+});
+
+function bulkArchive() {
+    if (selectedTasks.size === 0) { showNotification('No tasks selected', 'error'); return; }
+    const taskIds = Array.from(selectedTasks);
+    if (!confirm(`Archive ${taskIds.length} selected task${taskIds.length > 1 ? 's' : ''}?`)) return;
+    showNotification(`Archiving ${taskIds.length} tasks...`, 'info');
+    fetch('{{ route("tasks.bulk-archive") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ task_ids: taskIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`✓ ${data.archived_count} task(s) archived!`, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else { showNotification('Failed to archive: ' + (data.message || 'Unknown error'), 'error'); }
+    })
+    .catch(error => { console.error('Bulk archive error:', error); showNotification('Error archiving tasks', 'error'); });
+}
+
+// ==============================================
+// TEMPLATES FUNCTIONS
+// ==============================================
+
+function openTemplatesModal() {
+    document.getElementById('templatesModal').classList.remove('hidden');
+    loadTemplates();
+}
+
+function closeTemplatesModal() {
+    document.getElementById('templatesModal').classList.add('hidden');
+}
+
+function loadTemplates() {
+    const boardId = {{ $board->id }};
+    const container = document.getElementById('templatesList');
+    container.innerHTML = '<div class="flex justify-center py-12"><div class="spinner w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin"></div></div>';
+    
+    fetch(appUrl(`boards/${boardId}/templates`), { headers: { 'Accept': 'application/json' } })
+    .then(response => response.json())
+    .then(templates => {
+        const countSpan = document.getElementById('templatesCount');
+        if (countSpan) countSpan.textContent = `${templates.length} ${templates.length === 1 ? 'template' : 'templates'}`;
+        
+        if (!templates || templates.length === 0) {
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3"><svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg></div><p class="text-gray-500 dark:text-gray-400 font-medium">No templates yet</p><p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Create your first template using the form on the left</p></div>`;
+            return;
+        }
+        
+        let html = '';
+        templates.forEach(template => {
+            const checklistCount = template.checklist_items?.length || 0;
+            const priorityClass = template.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : (template.priority === 'medium' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300' : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300');
+            const priorityText = template.priority === 'high' ? '🔴 High' : (template.priority === 'medium' ? '🟡 Medium' : '🟢 Low');
+            
+            let checklistHtml = '';
+            if (checklistCount > 0) {
+                checklistHtml = `<div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700"><div class="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mb-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg><span>${checklistCount} items</span></div><div class="space-y-1 max-h-24 overflow-y-auto">${template.checklist_items.slice(0, 3).map(item => `<div class="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"><svg class="w-3 h-3 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg><span class="break-words">${escapeHtml(item.name.length > 60 ? item.name.substring(0, 60) + '...' : item.name)}</span></div>`).join('')}${template.checklist_items.length > 3 ? `<div class="text-xs text-gray-400 dark:text-gray-500 mt-1">+${template.checklist_items.length - 3} more items</div>` : ''}</div></div>`;
+            }
+            
+            html += `<div class="template-card bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200 group" data-template-id="${template.id}"><div class="flex justify-between items-start gap-3"><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap mb-1"><h4 class="font-semibold text-gray-800 dark:text-white">${escapeHtml(template.name)}</h4><span class="text-xs px-2 py-0.5 rounded-full ${priorityClass}">${priorityText}</span></div>${template.description ? `<p class="text-sm text-gray-500 dark:text-gray-400 mb-2 break-words">${escapeHtml(template.description.length > 100 ? template.description.substring(0, 100) + '...' : template.description)}</p>` : ''}${checklistHtml}</div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"><select class="use-template-list text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] bg-white dark:bg-gray-700 cursor-pointer" data-template-id="${template.id}"><option value="">Select list...</option>@foreach($board->lists as $list)<option value="{{ $list->id }}">{{ $list->name }}</option>@endforeach</select><button onclick="useTemplate(${template.id})" class="px-3 py-1.5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg hover:from-green-700 hover:to-green-600 transition-all duration-200 text-xs font-medium shadow-sm hover:shadow cursor-pointer">Use</button><button onclick="deleteTemplate(${template.id})" class="p-1.5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition cursor-pointer" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div></div>`;
+        });
+        container.innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Error loading templates:', error);
+        container.innerHTML = '<div class="text-center text-red-500 dark:text-red-400 py-8">Error loading templates. Please refresh and try again.</div>';
+    });
+}
+
+function createTemplate(event) {
+    event.preventDefault();
+    const name = document.getElementById('templateName').value.trim();
+    const description = document.getElementById('templateDesc').value.trim();
+    const priority = document.getElementById('templatePriority').value;
+    const checklistText = document.getElementById('templateChecklist').value;
+    if (!name) { showNotification('Please enter a template name', 'error'); return; }
+    const checklistItems = checklistText ? checklistText.split('\n').filter(item => item.trim()).map(item => ({ name: item.trim(), is_checked: false })) : [];
+    showNotification('Creating template...', 'info');
+    fetch('{{ route("templates.store", $board) }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        body: JSON.stringify({ name: name, description: description, priority: priority, checklist_items: checklistItems })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Template created!', 'success');
+            document.getElementById('createTemplateForm').reset();
+            document.getElementById('templateChecklist').value = '';
+            loadTemplates();
+        } else { showNotification('Failed to create template: ' + (data.error || 'Unknown error'), 'error'); }
+    })
+    .catch(error => { console.error('Error:', error); showNotification('Error creating template: ' + error.message, 'error'); });
+}
+
+function useTemplate(templateId) {
+    const select = document.querySelector(`.use-template-list[data-template-id="${templateId}"]`);
+    const listId = select?.value;
+    if (!listId) { showNotification('Please select a list first', 'error'); return; }
+    showNotification('Creating task from template...', 'info');
+    fetch(appUrl(`templates/${templateId}/create-task`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        body: JSON.stringify({ task_list_id: listId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Task created from template!', 'success');
+            setTimeout(() => location.reload(), 800);
+        } else { showNotification('Failed to create task: ' + (data.error || 'Unknown error'), 'error'); }
+    })
+    .catch(error => { console.error('Error:', error); showNotification('Error creating task from template', 'error'); });
+}
+
+function deleteTemplate(templateId) {
+    if (!confirm('Are you sure you want to delete this template?')) return;
+    fetch(appUrl(`templates/${templateId}`), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Template deleted!', 'success');
+            loadTemplates();
+        } else { showNotification('Failed to delete template', 'error'); }
+    })
+    .catch(error => { console.error('Error:', error); showNotification('Error deleting template', 'error'); });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initZoom();
+    initDragToScroll();
+    const listNameInput = document.getElementById('autoArchiveListName');
+    const daysInput = document.getElementById('autoArchiveDays');
+    if (listNameInput) listNameInput.addEventListener('input', updatePreview);
+    if (daysInput) daysInput.addEventListener('input', updatePreview);
+});
+
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('autoArchiveModal');
+    if (event.target === modal) closeAutoArchiveModal();
+    const templatesModal = document.getElementById('templatesModal');
+    if (event.target === templatesModal) closeTemplatesModal();
+});
+
+// Upload cover functions
+function uploadCoverForTask(taskId) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showNotification('Please select an image file', 'error');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('File too large! Max 5MB', 'error');
+            return;
+        }
+        uploadAndSetAsCover(taskId, file);
+        fileInput.remove();
+    };
+    document.body.appendChild(fileInput);
+    fileInput.click();
+}
+
+function uploadAndSetAsCover(taskId, file) {
+    showNotification('Uploading cover...', 'info');
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    fetch(appUrl(`tasks/${taskId}/attachments`), {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+        credentials: 'same-origin',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.attachment) {
+            return fetch(appUrl(`attachments/${data.attachment.id}/set-cover`), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+        } else {
+            throw new Error(data.error || 'Upload failed');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Cover uploaded and set!', 'success');
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to set as cover');
+        }
+    })
+    .catch(error => {
+        console.error('Upload cover error:', error);
+        showNotification('Failed to upload cover: ' + error.message, 'error');
+    });
+}
+
+function removeCoverFromCard(taskId) {
+    if (!confirm('Remove cover image from this task?')) return;
+    showNotification('Removing cover...', 'info');
+    fetch(appUrl(`tasks/${taskId}/remove-cover`), {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Cover removed!', 'success');
+            location.reload();
+        } else {
+            showNotification('Failed to remove cover', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Remove cover error:', error);
+        showNotification('Error removing cover', 'error');
+    });
+}
+
+// ==============================================
+// COMPACT MODE TOGGLE
+// ==============================================
+
+function toggleCompactMode() {
+    compactMode = !compactMode;
+    localStorage.setItem('kanban_compact_mode', compactMode);
+    const container = document.querySelector('.kanban-board-container');
+    const btn = document.getElementById('compactModeBtn');
+    const textSpan = document.getElementById('compactModeText');
+    
+    if (compactMode) {
+        if (container) container.classList.add('compact-mode');
+        if (textSpan) textSpan.textContent = 'Normal';
+    } else {
+        if (container) container.classList.remove('compact-mode');
+        if (textSpan) textSpan.textContent = 'Compact';
+    }
+    
+    if (typeof currentZoom !== 'undefined' && currentZoom) {
+        setTimeout(() => applyZoom(currentZoom), 50);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.querySelector('.kanban-board-container');
+    const textSpan = document.getElementById('compactModeText');
+    
+    if (compactMode) {
+        if (container) container.classList.add('compact-mode');
+        if (textSpan) textSpan.textContent = 'Normal';
+    } else {
+        if (textSpan) textSpan.textContent = 'Compact';
+    }
+});
+
+// ==============================================
+// COVER SETTING FUNCTIONS
+// ==============================================
+
+function toggleCoverSetting() {
+    const toggle = document.getElementById('coverToggle');
+    if (!toggle) {
+        console.error('Cover toggle element not found');
+        return;
+    }
+    
+    const enabled = toggle.checked;
+    const boardId = {{ $board->id }};
+    
+    console.log('Toggling cover to:', enabled);
+    console.log('Board ID:', boardId);
+    
+    toggle.disabled = true;
+    
+    showNotification(enabled ? '🖼️ Enabling covers...' : '🚫 Disabling covers...', 'info');
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        showNotification('CSRF token not found', 'error');
+        toggle.disabled = false;
+        toggle.checked = !enabled;
+        return;
+    }
+    
+    fetch(appUrl(`api/toggle-cover/${boardId}`), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken.content,
+            'Accept': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            cover_enabled: enabled
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showNotification(enabled ? '✓ Covers enabled! Refreshing...' : '✓ Covers disabled! Refreshing...', 'success');
+            setTimeout(() => location.reload(), 500);
+        } else {
+            throw new Error(data.error || data.message || 'Failed to update');
+        }
+    })
+    .catch(error => {
+        console.error('Toggle cover error:', error);
+        showNotification('❌ Failed to update cover settings: ' + error.message, 'error');
+        toggle.checked = !enabled;
+        toggle.disabled = false;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const coverToggle = document.getElementById('coverToggle');
+    if (coverToggle) {
+        const newToggle = coverToggle.cloneNode(true);
+        coverToggle.parentNode.replaceChild(newToggle, coverToggle);
+        newToggle.addEventListener('change', toggleCoverSetting);
+        console.log('Cover toggle event listener attached');
+    } else {
+        console.warn('Cover toggle element not found on page load');
+    }
+});
+
+// ==============================================
+// DRAG TO SCROLL - BOTH HORIZONTAL & VERTICAL
+// ==============================================
+
+let isDraggingScroll = false;
+let isPointerDownForScroll = false;
+let suppressNextBoardClick = false;
+let scrollPointerId = null;
+let startDragX, startDragY;
+let startScrollLeft, startScrollTop;
+
+function initDragToScroll() {
+    const container = document.querySelector('.kanban-board-container');
+    
+    if (!container) return;
+
+    function isInteractiveTarget(target) {
+        return target.closest('button, input, textarea, select, a, label, [contenteditable="true"], .resize-handle, .task-bulk-checkbox');
+    }
+
+    function shouldStartBoardPan(event) {
+        if (event.button !== 0 || isInteractiveTarget(event.target)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function stopBoardPan() {
+        isDraggingScroll = false;
+        isPointerDownForScroll = false;
+        scrollPointerId = null;
+        container.style.cursor = 'grab';
+        container.classList.remove('dragging');
+    }
+    
+    // ==============================================
+    // 1. Drag to scroll (Horizontal & Vertical)
+    // ==============================================
+    container.addEventListener('pointerdown', (e) => {
+        if (!shouldStartBoardPan(e)) {
+            return;
+        }
+
+        isPointerDownForScroll = true;
+        suppressNextBoardClick = false;
+        scrollPointerId = e.pointerId;
+        startDragX = e.clientX;
+        startDragY = e.clientY;
+        startScrollLeft = container.scrollLeft;
+        startScrollTop = container.scrollTop;
+    });
+
+    container.addEventListener('pointermove', (e) => {
+        if (!isPointerDownForScroll || e.pointerId !== scrollPointerId) return;
+
+        const walkX = e.clientX - startDragX;
+        const walkY = e.clientY - startDragY;
+
+        const isHorizontalPan = Math.abs(walkX) > 8 && Math.abs(walkX) > Math.abs(walkY) * 1.15;
+
+        if (!isDraggingScroll && isHorizontalPan) {
+            isDraggingScroll = true;
+            suppressNextBoardClick = true;
+            container.style.cursor = 'grabbing';
+            container.classList.add('dragging');
+            container.setPointerCapture?.(e.pointerId);
+        }
+
+        if (!isDraggingScroll) return;
+
+        e.preventDefault();
+        container.scrollLeft = startScrollLeft - walkX;
+        container.scrollTop = startScrollTop - walkY;
+    });
+
+    container.addEventListener('pointerup', stopBoardPan);
+    container.addEventListener('pointercancel', stopBoardPan);
+    container.addEventListener('lostpointercapture', stopBoardPan);
+
+    container.addEventListener('click', (e) => {
+        if (suppressNextBoardClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            suppressNextBoardClick = false;
+            stopBoardPan();
+        }
+    }, true);
+
+    // Trackpad horizontal gestures should move the board horizontally.
+    container.addEventListener('wheel', function(e) {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+            container.scrollLeft += e.deltaX;
+        }
+    });
+    
+    // ==============================================
+    // 2. Shift + Mouse Wheel untuk scroll horizontal
+    // ==============================================
+    container.addEventListener('wheel', function(e) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            container.scrollBy({
+                left: e.deltaY > 0 ? 100 : -100,
+                behavior: 'smooth'
+            });
+        }
+    });
+    
+    // ==============================================
+    // 3. Keyboard navigation (Panah kiri/kanan/atas/bawah)
+    // ==============================================
+    container.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+            container.scrollBy({ left: -200, behavior: 'smooth' });
+        } else if (e.key === 'ArrowRight') {
+            container.scrollBy({ left: 200, behavior: 'smooth' });
+        } else if (e.key === 'ArrowUp') {
+            container.scrollBy({ top: -200, behavior: 'smooth' });
+        } else if (e.key === 'ArrowDown') {
+            container.scrollBy({ top: 200, behavior: 'smooth' });
+        }
+    });
+    
+    // ==============================================
+    // 4. Mouse wheel untuk vertical scroll (default)
+    // ==============================================
+    // Tidak perlu diubah, default sudah vertical
+}
+// ==============================================
+// INITIALIZE ALL ON PAGE LOAD
+// ==============================================
+
+function initAutoRefresh() {
+    const refreshIntervalMs = 10000;
+
+    function isUserWorking() {
+        const active = document.activeElement;
+        const isTyping = active && (
+            active.matches('input, textarea, select, [contenteditable="true"]') ||
+            active.closest('form')
+        );
+        const visibleModal = document.querySelector('.modal:not(.hidden), [id$="Modal"]:not(.hidden), .fixed.inset-0:not(.hidden)');
+        const isDragging = document.querySelector('.dragging, .sortable-chosen, .sortable-drag');
+        const hasOpenFilePicker = document.querySelector('input[type="file"]');
+
+        return document.hidden || isTyping || visibleModal || isDragging || hasOpenFilePicker;
+    }
+
+    setInterval(() => {
+        if (!isUserWorking()) {
+            window.location.reload();
+        }
+    }, refreshIntervalMs);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initZoom();
+    initDragToScroll();
+    initAutoRefresh();
+    
+    const listNameInput = document.getElementById('autoArchiveListName');
+    const daysInput = document.getElementById('autoArchiveDays');
+    if (listNameInput) listNameInput.addEventListener('input', updatePreview);
+    if (daysInput) daysInput.addEventListener('input', updatePreview);
+    
+    const coverToggle = document.getElementById('coverToggle');
+    if (coverToggle) {
+        const newToggle = coverToggle.cloneNode(true);
+        coverToggle.parentNode.replaceChild(newToggle, coverToggle);
+        newToggle.addEventListener('change', toggleCoverSetting);
+    }
+});
+</script>
+@endsection

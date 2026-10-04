@@ -1,0 +1,19 @@
+{
+  "hris_endpoint": "https://31.97.106.123:8091/api/attendance-agent/clock-events",
+  "connector_code": "BIO-HO-01",
+  "agent_token": "change-this-token",
+  "agent_version": "0.1.0",
+  "machine_code": "BIO-HO-01",
+  "source_type": "csv_folder",
+  "csv_folder": "C:\\AttendanceExport",
+  "processed_folder": "C:\\AttendanceExport\\processed",
+  "retry_folder": "C:\\AttendanceExport\\retry",
+  "poll_seconds": 30,
+  "csv_mapping": {
+    "employee_identifier": "employee_number",
+    "employee_name": "employee_name",
+    "event_time": "event_time",
+    "event_type": "event_type",
+    "source_device": "source_device"
+  }
+}

@@ -1,0 +1,24 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+}
+
+android {
+    namespace "id.kurmigo.hris"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "id.kurmigo.hris"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "0.1.0-dev"
+
+        buildConfigField "String", "ADMIN_URL", "\"https://31.97.106.123:8091\""
+        buildConfigField "String", "ESS_URL", "\"https://31.97.106.123:8092/ess/request-center-entry\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}

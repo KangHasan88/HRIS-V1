@@ -1,0 +1,445 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-[1800px] mx-auto space-y-5">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <a href="{{ route('boards.show', $board) }}" class="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 mb-2">&larr; Kembali ke Board</a>
+                <h1 class="text-2xl font-bold text-slate-900">WBS - {{ $board->name }}</h1>
+                <p class="text-sm text-slate-500 mt-1">Struktur fitur, target pekerjaan, dan sinkronisasi ke Card serta Gantt.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @if($permission !== 'view')
+                <form method="POST" action="{{ route('boards.wbs.sync', $board) }}">
+                    @csrf
+                    <button class="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white font-semibold hover:bg-[#2d4a7c] transition">Sync Cards</button>
+                </form>
+                @endif
+                <a href="{{ route('boards.gantt', $board) }}" class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition">Buka Gantt</a>
+            </div>
+        </div>
+
+        @if(session('success'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">{{ session('success') }}</div>
+        @endif
+
+        @if($errors->any())
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                {{ $errors->first() }}
+            </div>
+        @endif
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">WBS Item</p>
+                <p class="text-2xl font-bold text-slate-900">{{ $stats['wbs'] }}</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Linked Card</p>
+                <p class="text-2xl font-bold text-[#1e3a5f]">{{ $stats['linked'] }}</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Belum Masuk WBS</p>
+                <p class="text-2xl font-bold text-amber-600">{{ $stats['unlinked'] }}</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Selesai</p>
+                <p class="text-2xl font-bold text-emerald-600">{{ $stats['done'] }}</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Overdue</p>
+                <p class="text-2xl font-bold text-red-600">{{ $stats['overdue'] }}</p>
+            </div>
+        </div>
+
+        @if($permission !== 'view')
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Tambah WBS</h2>
+                    <p class="text-sm text-slate-500 mt-1">Form ini bisa dibuka saat perlu menambah item manual. Item dari card tetap bisa dibuat lewat Sync Cards.</p>
+                </div>
+                <button type="button" id="toggleAddWbsButton" onclick="toggleAddWbs()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition">Buka Form</button>
+            </div>
+            <form id="addWbsForm" method="POST" action="{{ route('boards.wbs.store', $board) }}" class="hidden mt-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+                @csrf
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Kode</label>
+                    <input name="code" class="w-full rounded-lg border-slate-300 text-sm" placeholder="1.1">
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Fitur / Work Package</label>
+                    <input name="title" class="w-full rounded-lg border-slate-300 text-sm" required placeholder="Nama fitur atau pekerjaan">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Parent</label>
+                    <select name="parent_id" class="w-full rounded-lg border-slate-300 text-sm">
+                        <option value="">Root item</option>
+                        @foreach($rows as $row)
+                            <option value="{{ $row->id }}">{{ str_repeat('-- ', $row->level) }}{{ $row->code ? $row->code . ' - ' : '' }}{{ $row->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Link Card</label>
+                    <select name="task_id" class="w-full rounded-lg border-slate-300 text-sm">
+                        <option value="">Belum link card</option>
+                        @foreach($tasks as $task)
+                            <option value="{{ $task->id }}">[{{ $task->taskList->name ?? '-' }}] {{ $task->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:col-span-10">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Target / Output</label>
+                    <textarea name="target" rows="2" class="w-full rounded-lg border-slate-300 text-sm" placeholder="Target pekerjaan yang ingin dicapai"></textarea>
+                </div>
+                <div class="md:col-span-2 flex items-end">
+                    <button class="w-full px-4 py-2 rounded-lg bg-[#1e3a5f] text-white font-semibold hover:bg-[#2d4a7c] transition">Simpan</button>
+                </div>
+            </form>
+        </div>
+        @endif
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-[1180px] w-full text-sm">
+                    <thead class="bg-slate-100 text-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left w-28">WBS</th>
+                            <th class="px-4 py-3 text-left w-80">Fitur / Work Package</th>
+                            <th class="px-4 py-3 text-left w-80">Target</th>
+                            <th class="px-4 py-3 text-left w-72">Card</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-left">PIC</th>
+                            <th class="px-4 py-3 text-left">Tanggal</th>
+                            <th class="px-4 py-3 text-left">Progress</th>
+                            <th class="px-4 py-3 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($rows as $item)
+                            @php
+                                $task = $item->task;
+                                $statusName = $task->taskList->name ?? 'Draft';
+                                $statusLabel = [
+                                    'Backlog' => 'Backlog',
+                                    'Ready' => 'Ready',
+                                    'In Progress' => 'In Progress',
+                                    'Review' => 'Review',
+                                    'Testing' => 'Testing',
+                                    'Done' => 'Done',
+                                    'Failed' => 'Failed',
+                                ][$statusName] ?? $statusName;
+                                $priorityLabel = [
+                                    'high' => 'High',
+                                    'medium' => 'Medium',
+                                    'low' => 'Low',
+                                ][$task->priority ?? ''] ?? 'Normal';
+                                $assignees = $task && $task->assignees->count() ? $task->assignees->pluck('name')->join(', ') : '-';
+                                $startDate = $task && $task->start_date ? \Carbon\Carbon::parse($task->start_date)->format('d/m/Y') : '-';
+                                $dueDate = $task && $task->due_date ? \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') : '-';
+                                $progress = max(0, min(100, (int) ($task->progress ?? 0)));
+                                $priorityClass = [
+                                    'high' => 'bg-red-100 text-red-700',
+                                    'medium' => 'bg-amber-100 text-amber-700',
+                                    'low' => 'bg-emerald-100 text-emerald-700',
+                                ][$task->priority ?? ''] ?? 'bg-slate-100 text-slate-600';
+                            @endphp
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-4 align-top font-bold text-[#1e3a5f]">{{ $item->code ?: '-' }}</td>
+                                <td class="px-4 py-4 align-top">
+                                    <div style="padding-left: {{ $item->level * 22 }}px">
+                                        <div class="font-semibold text-slate-900">{{ $item->title }}</div>
+                                        @if($item->notes)
+                                            <div class="text-xs text-slate-500 mt-1">{{ $item->notes }}</div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 align-top text-slate-600">
+                                    <div class="line-clamp-3">{{ $item->target ?: '-' }}</div>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    @if($task)
+                                        <div class="font-semibold text-slate-900 line-clamp-2">{{ $task->title }}</div>
+                                        <div class="text-xs text-slate-500">{{ $statusLabel }}</div>
+                                        <span class="inline-flex mt-2 px-2 py-1 rounded-full text-xs font-semibold {{ $priorityClass }}">{{ $priorityLabel }}</span>
+                                    @else
+                                        <span class="text-slate-400">Belum link card</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    @if($task)
+                                        <span class="inline-flex px-2 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">{{ $statusLabel }}</span>
+                                    @else
+                                        <span class="text-slate-400">Draft</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 align-top text-slate-600">
+                                    {{ $assignees }}
+                                </td>
+                                <td class="px-4 py-4 align-top text-slate-600 whitespace-nowrap">
+                                    @if($task)
+                                        <div>Mulai: {{ $startDate }}</div>
+                                        <div>Due: {{ $dueDate }}</div>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="w-28 bg-slate-100 rounded-full h-2 overflow-hidden">
+                                        <div class="bg-[#1e3a5f] h-2 rounded-full" style="width: {{ $progress }}%"></div>
+                                    </div>
+                                    <div class="text-xs text-slate-500 mt-1">{{ $progress }}%</div>
+                                </td>
+                                <td class="px-4 py-4 align-top text-right whitespace-nowrap">
+                                    <button type="button"
+                                            data-code="{{ e($item->code ?: '-') }}"
+                                            data-title="{{ e($item->title) }}"
+                                            data-target="{{ e($item->target ?: '-') }}"
+                                            data-notes="{{ e($item->notes ?: '-') }}"
+                                            data-card="{{ e($task->title ?? 'Belum link card') }}"
+                                            data-status="{{ e($statusLabel) }}"
+                                            data-priority="{{ e($priorityLabel) }}"
+                                            data-assignees="{{ e($assignees) }}"
+                                            data-start="{{ e($startDate) }}"
+                                            data-due="{{ e($dueDate) }}"
+                                            data-progress="{{ $progress }}"
+                                            onclick="openWbsDetail(this)"
+                                            class="px-3 py-1.5 rounded-lg bg-[#1e3a5f] text-white font-semibold hover:bg-[#2d4a7c]">Detail</button>
+                                    @if($permission !== 'view')
+                                    <button type="button"
+                                            data-id="{{ $item->id }}"
+                                            data-code="{{ e($item->code) }}"
+                                            data-title="{{ e($item->title) }}"
+                                            data-target="{{ e($item->target) }}"
+                                            data-notes="{{ e($item->notes) }}"
+                                            data-parent-id="{{ $item->parent_id }}"
+                                            data-task-id="{{ $item->task_id }}"
+                                            data-sort-order="{{ $item->sort_order }}"
+                                            data-url="{{ route('boards.wbs.update', [$board, $item]) }}"
+                                            onclick="openEditWbsFromButton(this)"
+                                            class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200">Edit</button>
+                                    <form method="POST" action="{{ route('boards.wbs.destroy', [$board, $item]) }}" class="inline" onsubmit="return confirm('Hapus WBS item ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Hapus</button>
+                                    </form>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-4 py-10 text-center text-slate-500">
+                                    Belum ada WBS. Klik Sync Cards untuk membuat WBS dari card yang sudah ada.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if($unlinkedTasks->count())
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <h2 class="font-bold text-amber-900 mb-2">Card belum masuk WBS</h2>
+            <p class="text-sm text-amber-800">{{ $unlinkedTasks->count() }} card belum punya WBS. Gunakan Sync Cards agar semua pekerjaan tercatat.</p>
+        </div>
+        @endif
+    </div>
+</div>
+
+<div id="wbsDetailModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-slate-200 p-5 flex items-center justify-between gap-3">
+            <div>
+                <p class="text-xs uppercase tracking-wide text-slate-500">WBS Detail</p>
+                <h2 id="detail_title" class="text-lg font-bold text-slate-900">-</h2>
+            </div>
+            <button type="button" onclick="closeWbsDetail()" class="text-slate-500 hover:text-slate-900 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div class="lg:col-span-8 space-y-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Target / Output</p>
+                    <div id="detail_target" class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-700 whitespace-pre-wrap">-</div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Notes</p>
+                    <div id="detail_notes" class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-700 whitespace-pre-wrap">-</div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Linked Card</p>
+                    <div id="detail_card" class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm font-semibold text-slate-900">-</div>
+                </div>
+            </div>
+            <div class="lg:col-span-4 space-y-3">
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500">WBS Code</p>
+                    <p id="detail_code" class="font-bold text-[#1e3a5f]">-</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500">Card Status</p>
+                    <p id="detail_status" class="font-semibold text-slate-900">-</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500">Priority</p>
+                    <p id="detail_priority" class="font-semibold text-slate-900">-</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500">PIC</p>
+                    <p id="detail_assignees" class="font-semibold text-slate-900">-</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500">Tanggal WBS/Gantt</p>
+                    <p class="font-semibold text-slate-900">Mulai: <span id="detail_start">-</span></p>
+                    <p class="font-semibold text-slate-900">Due: <span id="detail_due">-</span></p>
+                </div>
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                        <span>Progress</span>
+                        <span id="detail_progress_text">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="detail_progress_bar" class="bg-[#1e3a5f] h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if($permission !== 'view')
+<div id="editWbsModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-3xl p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-slate-900">Edit WBS</h2>
+            <button type="button" onclick="closeEditWbs()" class="text-slate-500 hover:text-slate-900 text-2xl leading-none">&times;</button>
+        </div>
+        <form id="editWbsForm" method="POST" class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            @csrf
+            @method('PUT')
+            <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Kode</label>
+                <input id="edit_code" name="code" class="w-full rounded-lg border-slate-300 text-sm">
+            </div>
+            <div class="md:col-span-5">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Fitur / Work Package</label>
+                <input id="edit_title" name="title" class="w-full rounded-lg border-slate-300 text-sm" required>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Urutan</label>
+                <input id="edit_sort_order" name="sort_order" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm">
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Parent</label>
+                <select id="edit_parent_id" name="parent_id" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Root item</option>
+                    @foreach($rows as $row)
+                        <option value="{{ $row->id }}">{{ str_repeat('-- ', $row->level) }}{{ $row->code ? $row->code . ' - ' : '' }}{{ $row->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="md:col-span-12">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Link Card</label>
+                <select id="edit_task_id" name="task_id" class="w-full rounded-lg border-slate-300 text-sm">
+                    <option value="">Belum link card</option>
+                    @foreach($tasks as $task)
+                        <option value="{{ $task->id }}">[{{ $task->taskList->name ?? '-' }}] {{ $task->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="md:col-span-12">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Target / Output</label>
+                <textarea id="edit_target" name="target" rows="3" class="w-full rounded-lg border-slate-300 text-sm"></textarea>
+            </div>
+            <div class="md:col-span-12">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Catatan</label>
+                <textarea id="edit_notes" name="notes" rows="2" class="w-full rounded-lg border-slate-300 text-sm"></textarea>
+            </div>
+            <div class="md:col-span-12 flex justify-end gap-2">
+                <button type="button" onclick="closeEditWbs()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Batal</button>
+                <button class="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white font-semibold">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditWbsFromButton(button) {
+    openEditWbs({
+        id: button.dataset.id,
+        code: button.dataset.code,
+        title: button.dataset.title,
+        target: button.dataset.target,
+        notes: button.dataset.notes,
+        parent_id: button.dataset.parentId,
+        task_id: button.dataset.taskId,
+        sort_order: button.dataset.sortOrder,
+        url: button.dataset.url,
+    });
+}
+function openEditWbs(item) {
+    const modal = document.getElementById('editWbsModal');
+    const form = document.getElementById('editWbsForm');
+    form.action = item.url;
+    document.getElementById('edit_code').value = item.code || '';
+    document.getElementById('edit_title').value = item.title || '';
+    document.getElementById('edit_target').value = item.target || '';
+    document.getElementById('edit_notes').value = item.notes || '';
+    document.getElementById('edit_sort_order').value = item.sort_order || 0;
+    document.getElementById('edit_parent_id').value = item.parent_id || '';
+    document.getElementById('edit_task_id').value = item.task_id || '';
+    [...document.getElementById('edit_parent_id').options].forEach(option => {
+        option.disabled = option.value && Number(option.value) === Number(item.id);
+    });
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeEditWbs() {
+    const modal = document.getElementById('editWbsModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
+@endif
+<script>
+function toggleAddWbs() {
+    const form = document.getElementById('addWbsForm');
+    const button = document.getElementById('toggleAddWbsButton');
+    if (!form || !button) return;
+
+    const isHidden = form.classList.contains('hidden');
+    form.classList.toggle('hidden', !isHidden);
+    button.textContent = isHidden ? 'Sembunyikan Form' : 'Buka Form';
+}
+
+function openWbsDetail(button) {
+    const modal = document.getElementById('wbsDetailModal');
+    document.getElementById('detail_code').textContent = button.dataset.code || '-';
+    document.getElementById('detail_title').textContent = button.dataset.title || '-';
+    document.getElementById('detail_target').textContent = button.dataset.target || '-';
+    document.getElementById('detail_notes').textContent = button.dataset.notes || '-';
+    document.getElementById('detail_card').textContent = button.dataset.card || '-';
+    document.getElementById('detail_status').textContent = button.dataset.status || '-';
+    document.getElementById('detail_priority').textContent = button.dataset.priority || '-';
+    document.getElementById('detail_assignees').textContent = button.dataset.assignees || '-';
+    document.getElementById('detail_start').textContent = button.dataset.start || '-';
+    document.getElementById('detail_due').textContent = button.dataset.due || '-';
+
+    const progress = Math.max(0, Math.min(100, Number(button.dataset.progress || 0)));
+    document.getElementById('detail_progress_text').textContent = `${progress}%`;
+    document.getElementById('detail_progress_bar').style.width = `${progress}%`;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeWbsDetail() {
+    const modal = document.getElementById('wbsDetailModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
+@endsection

@@ -1,0 +1,27 @@
+{
+  "connector_code": "BIO-AGENT-SMOKE",
+  "agent_token": "smoke-agent-093",
+  "agent_version": "0.1.0-smoke",
+  "batch_id": "CSV-SMOKE-093-20260721-0900",
+  "machine_code": "BIO-SMOKE-01",
+  "source_type": "csv_folder",
+  "source_reference": "C:\\AttendanceSmoke\\clock-20260721.csv",
+  "events": [
+    {
+      "employee_identifier": "KRM-SMOKE-093",
+      "employee_name": "Smoke Agent Employee",
+      "event_time": "2026-07-21 09:00:00",
+      "event_type": "clock-in",
+      "source_device": "BIO-SMOKE-01",
+      "raw_payload": {"pin": "KRM-SMOKE-093"}
+    },
+    {
+      "employee_identifier": "UNKNOWN-SMOKE-093",
+      "employee_name": "Unknown Smoke",
+      "event_time": "2026-07-21 09:05:00",
+      "event_type": "clock-in",
+      "source_device": "BIO-SMOKE-01",
+      "raw_payload": {"pin": "UNKNOWN-SMOKE-093"}
+    }
+  ]
+}

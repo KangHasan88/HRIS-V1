@@ -1,0 +1,18 @@
+{
+  "name": "Kurmigo HRIS Mobile WebView QA Matrix",
+  "platforms": ["android", "ios"],
+  "entrypoints": {
+    "admin": "https://31.97.106.123:8091",
+    "ess": "https://31.97.106.123:8092/ess/request-center-entry"
+  },
+  "scenarios": [
+    {"area": "Login & Session", "priority": "P0", "android": "ready", "ios": "ready"},
+    {"area": "Navigation", "priority": "P0", "android": "ready", "ios": "ready"},
+    {"area": "Request Center", "priority": "P0", "android": "ready", "ios": "ready"},
+    {"area": "Bridge", "priority": "P0", "android": "ready", "ios": "ready"},
+    {"area": "Device Permission", "priority": "P1", "android": "planned", "ios": "planned"},
+    {"area": "Offline Queue", "priority": "P1", "android": "planned", "ios": "planned"},
+    {"area": "Document Handling", "priority": "P1", "android": "planned", "ios": "planned"},
+    {"area": "Security", "priority": "P1", "android": "planned", "ios": "planned"}
+  ]
+}
